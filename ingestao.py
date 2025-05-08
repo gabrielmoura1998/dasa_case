@@ -27,10 +27,6 @@ import os
 ### Após essas instruções, há um campo de "CREATE NEW TOKEN", clica nesse botão que irá baixar o JSON que você deve colocar na pasta...
 ### C:\Users\<USUARIO>\.kaggle
 
-# Qualquer dúvida, entra em contato comigo:
-# e-mail -> gabriel.moura.martins@hotmail.com
-# whatsapp -> 92 98856 0700
-
 def autenticar():
     try:
         api = KaggleApi()
