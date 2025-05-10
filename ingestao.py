@@ -79,7 +79,7 @@ def criar_tabela_postgres(dataframe, nometabela, nomeschema):
     engine = create_engine(url)
 
     with engine.begin() as conn:
-        conn.execute(text(f"CREATE SCHHEMA IF NOT EXISTS {nome_do_schema}"))
+        conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {nome_do_schema}"))
 
     try:
         dataframe.to_sql(
