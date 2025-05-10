@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:15
+    container_name: dasa_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: dasa_user
+      POSTGRES_PASSWORD: dasa_pwd
+      POSTGRES_DB: dasa_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    image: dasa-kaggle-downloader
+    depends_on:
+      - db
+    volumes:
+      - ~/.kaggle:/root/.kaggle:ro
+      - ./dataset/rh:/app/dataset/rh
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: dasa_db
+      DB_USER: dasa_user
+      DB_PASSWORD: dasa_pwd
+    command:
+      - python
+      - ingestao.py

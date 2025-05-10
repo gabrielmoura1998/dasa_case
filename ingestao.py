@@ -8,6 +8,7 @@ O próprio Kaggle fornece uma biblioteca com a documentação completa para impo
 # do seu PC local
 
 from kaggle.api.kaggle_api_extended import KaggleApi
+from sqlalchemy import create_engine
 import pandas as pd
 import os
 
@@ -62,6 +63,33 @@ def carregar_dataframe(destino, nome_arquivo):
     df = pd.read_csv(arquivo_csv)
     return df
 
+def criar_tabela_postgres(dataframe, nometabela):
+    df = dataframe
+    nome_da_tabela = nometabela
+
+    user = os.getenv("DB_USER")
+    password = os.getenv("DB_PASSWORD")
+    host = os.getenv("DB_HOST")
+    port = os.getenv("DB_PORT")
+    dbname = os.getenv("DB_NAME")
+
+
+    url = fr"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+    engine = create_engine(url)
+
+    try:
+        dataframe.to_sql(
+            name=nome_da_tabela,
+            con=engine,
+            if_exists="replace",
+            index=False
+        )
+
+        return print(f"Deu bom! Criou a tabela {nometabela} no PostgreSQL :) ")
+    
+    except Exception as e:
+        return print(f"Deu ruim :( -> Olha o erro: {e})")
+
 
 def main():
     rh_dataset = 'pavansubhasht/ibm-hr-analytics-attrition-dataset'
@@ -75,8 +103,7 @@ def main():
 
     df = carregar_dataframe(destino, nome_arquivo)
 
-    print(df.head())
-
+    criar_tabela_postgres(df, "hr_analytics_attrition_dataset")
 
 if __name__ == "__main__":
     main()
