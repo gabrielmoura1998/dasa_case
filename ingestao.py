@@ -8,7 +8,7 @@ O próprio Kaggle fornece uma biblioteca com a documentação completa para impo
 # do seu PC local
 
 from kaggle.api.kaggle_api_extended import KaggleApi
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import pandas as pd
 import os
 
@@ -32,7 +32,7 @@ def autenticar():
     try:
         api = KaggleApi()
         api.authenticate()
-        print("Autenticação da API foi realizada com sucesso!")
+        print("Deu bom! A API foi autenticada :) ")
         return api
     except Exception as e:
         print("Deu ruim. Você não conseguiu autenticar a API, veja as instruções no GitHub.")
@@ -63,9 +63,10 @@ def carregar_dataframe(destino, nome_arquivo):
     df = pd.read_csv(arquivo_csv)
     return df
 
-def criar_tabela_postgres(dataframe, nometabela):
+def criar_tabela_postgres(dataframe, nometabela, nomeschema):
     df = dataframe
     nome_da_tabela = nometabela
+    nome_do_schema = nomeschema
 
     user = os.getenv("DB_USER")
     password = os.getenv("DB_PASSWORD")
@@ -77,15 +78,19 @@ def criar_tabela_postgres(dataframe, nometabela):
     url = fr"postgresql://{user}:{password}@{host}:{port}/{dbname}"
     engine = create_engine(url)
 
+    with engine.begin() as conn:
+        conn.execute(text(f"CREATE SCHHEMA IF NOT EXISTS {nome_do_schema}"))
+
     try:
         dataframe.to_sql(
             name=nome_da_tabela,
             con=engine,
+            schema=nome_do_schema,
             if_exists="replace",
             index=False
         )
 
-        return print(f"Deu bom! Criou a tabela {nometabela} no PostgreSQL :) ")
+        return print(f"Deu bom! Criou a tabela {nometabela} no schema {nomeschema} dentro do PostgreSQL :) ")
     
     except Exception as e:
         return print(f"Deu ruim :( -> Olha o erro: {e})")
@@ -103,7 +108,7 @@ def main():
 
     df = carregar_dataframe(destino, nome_arquivo)
 
-    criar_tabela_postgres(df, "hr_analytics_attrition_dataset")
+    criar_tabela_postgres(df, "hr_analytics_attrition_dataset", "bronze")
 
 if __name__ == "__main__":
     main()
