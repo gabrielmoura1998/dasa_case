@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 user     = os.getenv("DB_USER", "dasa_user")
 password = os.getenv("DB_PASSWORD", "dasa_pwd")
@@ -97,4 +97,111 @@ mapa = {
 
 df_silver = df_bronze.rename(columns=mapa)
 
-print(df_silver.dtypes)
+def criar_tabela_silver(dataframe, nomeschema, nometabela):
+    with engine.begin() as conn:
+        conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {nomeschema}"))
+
+    try:
+        dataframe.to_sql(
+            name=nometabela,
+            con=engine,
+            schema=nomeschema,
+            if_exists="replace",
+            index=False
+        )
+
+        return print(f"Deu bom! Criou a tabela {nometabela} no schema {nomeschema} dentro do PostgreSQL :) ")
+    
+    except Exception as e:
+        return print(f"Deu ruim :( -> Olha o erro: {e})")
+    
+# Criamos a camada silver - ou trusted - no PostgreSQL com uma tabela geral chamada rh_geral, agora vamos dividir a tabela e criando algumas outras
+# na camada gold para cada grupo de analise.
+    
+def criar_tabelas_gold(nomeschema):
+    df_silver = pd.read_sql(
+    "SELECT * FROM silver.rh_geral",
+    con=engine)
+
+    tabela_pessoal = "rh_pessoal"
+    tabela_trabalho = "rh_trabalho"
+    tabela_monetaria = "rh_monetaria"
+
+    df_gold_pessoal = df_silver[[
+                                'id_funcionario',
+                                'contagem_funcionario',
+                                'perda_de_hc',
+                                'idade',
+                                'distancia_casa_trabalho',
+                                'escolaridade',
+                                'formacao',
+                                'genero',
+                                'estado_civil',
+                                'maior_de_idade',
+                                'satisfacao_relacionamento',
+                                'equilibrio_vidapessoal_trabalho'
+                                ]]
+    
+    df_gold_trabalho = df_silver[[
+                                'id_funcionario',
+                                'contagem_funcionario',
+                                'perda_de_hc',
+                                'frequencia_viagens_trabalho',
+                                'departamento',
+                                'satisfacao_no_ambiente',
+                                'nivel_hierarquico',
+                                'funcao',
+                                'satisfacao_no_cargo',
+                                'num_empresas_trabalhadas',
+                                'pratica_horas_extras',
+                                'desempenho',
+                                'horas_trabalhadas_semanais',
+                                'anos_trabalhados',
+                                'numero_de_treinamentos',
+                                'anos_na_empresa',
+                                'anos_na_funcaoatual',
+                                'anos_desde_ultima_promocao',
+                                'anos_sob_mesma_gerencia'
+                                ]]
+    
+    df_gold_monetaria = df_silver[[
+                                'id_funcionario',
+                                'contagem_funcionario',
+                                'perda_de_hc',
+                                'remuneracao_diaria',
+                                'remuneracao_por_hora',
+                                'envolvimento_no_trabalho',
+                                'remuneracao_mensal_moedalocal',
+                                'remuneracao_mensal_unidade',
+                                'percentual_aumento_salarial',
+                                'nivel_de_acionista'
+                                ]]
+    
+    with engine.begin() as conn:
+        conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {nomeschema}"))
+
+    def criar_tabela_gold(dataframe, nometabela, nomeschema):
+        try:
+            dataframe.to_sql(
+                name=nometabela,
+                con=engine,
+                schema=nomeschema,
+                if_exists="replace",
+                index=False
+            )
+
+            return print(f"Deu bom! Criou a tabela {nometabela} no schema {nomeschema} dentro do PostgreSQL :) ")
+        
+        except Exception as e:
+            return print(f"Deu ruim :( -> Olha o erro: {e})")
+        
+    criar_tabela_gold(df_gold_pessoal, tabela_pessoal, nomeschema)
+    criar_tabela_gold(df_gold_trabalho, tabela_trabalho, nomeschema)
+    criar_tabela_gold(df_gold_monetaria, tabela_monetaria, nomeschema)
+    
+def main():
+    criar_tabela_silver(df_silver, "silver", "rh_geral")
+    criar_tabelas_gold("gold")
+
+if __name__ == "__main__":
+    main()
