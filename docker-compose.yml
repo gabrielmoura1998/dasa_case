@@ -26,6 +26,3 @@ services:
       DB_NAME: dasa_db
       DB_USER: dasa_user
       DB_PASSWORD: dasa_pwd
-    command:
-      - python
-      - ingestao.py
